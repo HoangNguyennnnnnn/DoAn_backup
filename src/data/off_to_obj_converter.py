@@ -111,31 +111,52 @@ def _assert_kaggle_path(path: Path, role: str) -> None:
         )
 
 
-def validate_off_file(path: Path) -> Tuple[int, int]:
-    """Validate minimal OFF structure and return vertex/face counts."""
+def _read_off_header(path: Path) -> Tuple[List[str], int, str]:
+    """Return OFF lines, the counts-line index, and the normalized counts line."""
     if not path.exists() or not path.is_file():
         raise ConversionError(f"OFF file does not exist: {path}")
 
-    lines = path.read_text(encoding="utf-8", errors="strict").splitlines()
+    lines = path.read_text(encoding="utf-8-sig", errors="strict").splitlines()
     if not lines:
         raise ConversionError(f"OFF file is empty: {path}")
 
-    idx = 0
-    header = lines[idx].strip()
-    if header != "OFF":
-        if header.startswith("OFF") and len(header.split()) == 4:
-            counts_line = header[3:].strip()
-        else:
-            raise ConversionError(
-                f"Invalid OFF header in {path}. Expected first token 'OFF'."
-            )
+    header_idx = 0
+    while header_idx < len(lines):
+        stripped = lines[header_idx].strip()
+        if stripped and not stripped.startswith("#"):
+            break
+        header_idx += 1
+
+    if header_idx >= len(lines):
+        raise ConversionError(f"OFF file is empty: {path}")
+
+    header = lines[header_idx].strip()
+    tokens = header.split()
+    if not tokens or tokens[0].upper() != "OFF":
+        raise ConversionError(
+            f"Invalid OFF header in {path}. Expected first token 'OFF'."
+        )
+
+    if len(tokens) >= 4:
+        counts_line = " ".join(tokens[1:4])
+        counts_idx = header_idx + 1
     else:
-        idx += 1
-        while idx < len(lines) and (not lines[idx].strip() or lines[idx].strip().startswith("#")):
-            idx += 1
-        if idx >= len(lines):
+        counts_idx = header_idx + 1
+        while counts_idx < len(lines):
+            stripped = lines[counts_idx].strip()
+            if stripped and not stripped.startswith("#"):
+                break
+            counts_idx += 1
+        if counts_idx >= len(lines):
             raise ConversionError(f"Missing OFF counts line in {path}.")
-        counts_line = lines[idx].strip()
+        counts_line = lines[counts_idx].strip()
+
+    return lines, counts_idx, counts_line
+
+
+def validate_off_file(path: Path) -> Tuple[int, int]:
+    """Validate minimal OFF structure and return vertex/face counts."""
+    lines, idx, counts_line = _read_off_header(path)
 
     tokens = counts_line.split()
     if len(tokens) < 2:
@@ -160,35 +181,17 @@ def validate_off_file(path: Path) -> Tuple[int, int]:
 
 
 def _parse_off_geometry(path: Path) -> Tuple[List[Tuple[float, float, float]], List[List[int]]]:
-    lines = path.read_text(encoding="utf-8", errors="strict").splitlines()
-    if not lines:
-        raise ConversionError(f"OFF file is empty: {path}")
+    lines, pos, counts_line = _read_off_header(path)
 
-    pos = 0
-    first = lines[pos].strip()
-    if first == "OFF":
-        pos += 1
-    elif first.startswith("OFF"):
-        lines.insert(1, first[3:].strip())
-        lines[0] = "OFF"
-        pos = 1
-    else:
-        raise ConversionError(f"Invalid OFF header in {path}.")
-
-    while pos < len(lines) and (not lines[pos].strip() or lines[pos].strip().startswith("#")):
-        pos += 1
-    if pos >= len(lines):
-        raise ConversionError(f"Missing OFF counts line in {path}.")
-
-    parts = lines[pos].split()
+    parts = counts_line.split()
     if len(parts) < 2:
-        raise ConversionError(f"Malformed OFF counts line in {path}: {lines[pos]!r}")
+        raise ConversionError(f"Malformed OFF counts line in {path}: {counts_line!r}")
 
     try:
         vertex_count = int(parts[0])
         face_count = int(parts[1])
     except ValueError as exc:
-        raise ConversionError(f"Non-integer OFF counts in {path}: {lines[pos]!r}") from exc
+        raise ConversionError(f"Non-integer OFF counts in {path}: {counts_line!r}") from exc
 
     pos += 1
     vertices: List[Tuple[float, float, float]] = []

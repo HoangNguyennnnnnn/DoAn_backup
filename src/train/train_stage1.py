@@ -184,6 +184,19 @@ def _load_yaml(path: Path) -> Dict[str, Any]:
     return _expand_env(payload)
 
 
+def _coerce_int(value: Any, default: int) -> int:
+    if value is None:
+        return int(default)
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped or stripped.startswith("${"):
+            return int(default)
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return int(default)
+
+
 def _set_seed(seed: int) -> None:
     random.seed(seed)
     torch.manual_seed(seed)
@@ -535,12 +548,12 @@ def train(args: argparse.Namespace) -> Dict[str, Any]:
 
     loop_cfg = train_cfg.get("loop", {})
     mixed_precision = bool(loop_cfg.get("mixed_precision", True))
-    grad_accum_steps_cfg = int(loop_cfg.get("gradient_accumulation_steps", 1))
+    grad_accum_steps_cfg = _coerce_int(loop_cfg.get("gradient_accumulation_steps", 1), 1)
     grad_clip = float(loop_cfg.get("gradient_clipping_max_norm", 1.0))
-    log_interval = int(loop_cfg.get("log_interval_steps", 50))
-    val_interval = int(loop_cfg.get("val_interval_steps", 500))
-    ckpt_interval = int(loop_cfg.get("checkpoint_interval_steps", 500))
-    max_epochs = int(train_cfg.get("training", {}).get("max_epochs", 1))
+    log_interval = _coerce_int(loop_cfg.get("log_interval_steps", 50), 50)
+    val_interval = _coerce_int(loop_cfg.get("val_interval_steps", 500), 500)
+    ckpt_interval = _coerce_int(loop_cfg.get("checkpoint_interval_steps", 500), 500)
+    max_epochs = _coerce_int(train_cfg.get("training", {}).get("max_epochs", 1), 1)
 
     dataloader_knobs = _resolve_dataloader_knobs(data_cfg, hardware_cfg)
     oom_policy = dict(train_cfg.get("oom_fallback", {}))

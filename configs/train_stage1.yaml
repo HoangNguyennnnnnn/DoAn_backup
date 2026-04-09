@@ -63,7 +63,7 @@ scheduler:
 # Training loop
 loop:
   mixed_precision: true
-  gradient_accumulation_steps: "${GRAD_ACC_STEPS}"
+  gradient_accumulation_steps: 1
   gradient_clipping_max_norm: 1.0
   log_interval_steps: 50
   val_interval_steps: 500
