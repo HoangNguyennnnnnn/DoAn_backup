@@ -1,0 +1,31 @@
+{
+  "timestamp_utc": "2026-04-08T00:00:00Z",
+  "runtime": {
+    "device": "cpu",
+    "output_root": "outputs",
+    "checkpoint_dir": "outputs/checkpoints",
+    "kaggle_first_note": "Kaggle/Linux checkpoint outputs are authoritative for final validation."
+  },
+  "decode_summary": {
+    "checkpoint_count": 0,
+    "pass_count": 0,
+    "fail_count": 1,
+    "all_passed": false
+  },
+  "checkpoints": [],
+  "reconstruction_trend": {
+    "metrics_path": "outputs/logs/stage1_training_metrics.jsonl",
+    "available": false,
+    "val_total_loss": {
+      "count": 0,
+      "first": null,
+      "last": null,
+      "min": null,
+      "trend": "unavailable"
+    }
+  },
+  "exported_meshes": {},
+  "preflight_errors": [
+    "Local Windows runtime execution blocked by environment-level Numpy instability; decode sanity must be validated in Kaggle/Linux runtime."
+  ]
+}

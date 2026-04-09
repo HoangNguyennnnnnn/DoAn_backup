@@ -1,0 +1,101 @@
+training:
+  stage: "stage2"
+  task_type: "latent_generator_smoke"
+  smoke_test_mode: true
+  max_epochs: 1
+  warmup_epochs: 0
+  status: "smoke_ready"
+
+model:
+  name: "latent_generator_unet"
+  latent_input:
+    latent_dim: 128
+    input_format: "tensor"
+  latent_contract:
+    token_length: 8
+    token_dim: 16
+    latent_dim: 128
+    allow_flat_input: true
+  unet:
+    base_channels: 32
+    channel_multipliers: [1, 2, 4]
+    time_embed_dim: 128
+    dropout: 0.0
+  conditioning:
+    context_backend: "dino_first"
+    context_dim: 64
+    dino_context_dim: 768
+    num_classes: 40
+
+loss:
+  flow_loss_weight: 1.0
+  v_loss_weight: 0.25
+  v_loss_enabled: true
+  guidance_conditioning_enabled: true
+  guidance_dropout_start: 0.0
+  guidance_dropout_prob: 0.1
+  time_weight_mode: "midpoint"
+  clamp_timesteps: true
+
+optimizer:
+  name: "adam"
+  lr: 0.0005
+  betas: [0.9, 0.999]
+  epsilon: 1e-8
+  weight_decay: 1e-5
+
+scheduler:
+  name: "constant"
+  objective_warmup_steps: 0
+
+loop:
+  mixed_precision: false
+  gradient_accumulation_steps: 1
+  log_interval_steps: 10
+  val_interval_steps: 50
+  checkpoint_interval_steps: 50
+
+checkpointing:
+  save_best_only: false
+  save_last_only: true
+  keep_last_n: 1
+  autoresume_enabled: true
+  autoresume_precedence:
+    ["latest_step.ckpt", "interrupt.ckpt", "latest.ckpt", "best.ckpt"]
+  validation_export_precedence: ["best.ckpt", "latest.ckpt"]
+  artifacts:
+    - "latest.ckpt"
+    - "latest_step.ckpt"
+    - "interrupt.ckpt"
+    - "smoke_latest.ckpt"
+    - "best.ckpt"
+
+logging:
+  log_dir: "${OUTPUT_ROOT}/logs"
+  use_tensorboard: true
+  use_wandb: false
+  log_frequency: 10
+
+monitoring:
+  track_loss: true
+  track_metrics: ["smoke_loss"]
+  early_stopping_enabled: false
+  save_val_reconstructions: false
+
+resume:
+  resume_from_checkpoint: "${RESUME_CHECKPOINT_PATH}"
+  strict_model_loading: false
+  resume_optimizer_state: false
+  resume_epoch: false
+
+seed: 42
+
+notes: |
+  Stage 2 smoke test is a validation-only run to confirm:
+  1. Stage 1 latent extraction and interface contract work correctly.
+  2. Generator backbone can accept and process Stage 1 latents without shape mismatch.
+  3. End-to-end latent I/O pipeline is functional.
+
+  Full Stage 2 implementation remains smoke-scoped and correctness-focused.
+
+  This smoke config should complete in under 5 minutes on Kaggle.

@@ -1,0 +1,33 @@
+# Hardware Configuration for P100 GPU
+# Profile: Single P100 GPU on Kaggle
+# Reference: Kaggle P100 session (16GB VRAM)
+
+hardware:
+  profile_name: "p100_single"
+  gpu_type: "nvidia_p100"
+  vram_gb: 16
+  runtime_target: "kaggle"
+
+training:
+  batch_size: 8
+  mixed_precision: true
+  gradient_accumulation_steps: 2
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+
+memory:
+  enable_gradient_checkpointing: true
+  enable_flash_attention: false # P100 does not support FlashAttention
+  dtype: "float16" # or "bfloat16" if supported by CUDA version
+
+inference:
+  batch_size: 16
+  mixed_precision: true
+  num_workers: 2
+
+checkpointing:
+  save_interval_steps: 500
+  keep_last_n_checkpoints: 3
+  autoresume_enabled: true
+  autoresume_path: "${OUTPUT_ROOT}/checkpoints"

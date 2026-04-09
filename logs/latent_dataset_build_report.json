@@ -1,0 +1,6 @@
+{
+  "status": "failed",
+  "error": "No compatible Stage 1 checkpoint found using configured precedence. Searched: ['\\\\kaggle\\\\working\\\\checkpoints\\\\latest_step.ckpt', '\\\\kaggle\\\\working\\\\checkpoints\\\\best.ckpt', '\\\\kaggle\\\\working\\\\checkpoints\\\\interrupt.ckpt', '\\\\kaggle\\\\working\\\\checkpoints\\\\latest.ckpt'].",
+  "recovery": "Verify checkpoint availability under /kaggle/working/checkpoints and ensure dataset_root/output_root paths are valid Kaggle mounts.",
+  "reproducible_command": "python scripts/build_latent_dataset.py --train-config configs/train_stage1.yaml --data-config configs/data_stage1.yaml --checkpoint-preference latest_step,best,interrupt,latest --split both --batch-size 16"
+}

@@ -1,0 +1,71 @@
+data:
+  stage: "stage2"
+  pipeline_type: "latent_generation"
+  smoke_test_mode: true
+  status: "smoke_only_v1"
+
+dataset:
+  primary:
+    name: "modelnet40_latents"
+    source: "stage2_latent_manifest"
+    format: "latent_tensors"
+    num_categories: 40
+    num_samples: 12311
+    schema_version: "stage2-latent-v1"
+    token_length: 8
+    token_dim: 16
+    latent_dim: 128
+
+  extension:
+    name: "shapenetpart_latents"
+    kaggle_slug: "majdouline20/shapenetpart-dataset"
+    format: "mixed"
+    mode: "deferred_unless_explicitly_enabled"
+    condition: "stage1_stable_and_extension_gate_met"
+
+# Path contracts for Kaggle execution
+paths:
+  dataset_root: "${DATASET_ROOT}"
+  output_root: "${OUTPUT_ROOT}"
+  checkpoint_dir: "${OUTPUT_ROOT}/checkpoints"
+  log_dir: "${OUTPUT_ROOT}/logs"
+  stage1_checkpoint: "${STAGE1_CHECKPOINT_PATH}" # Trained Stage 1 model
+  latent_cache_dir: "${OUTPUT_ROOT}/cache/stage2_latents/stage2-latent-v1"
+  latent_manifest_train: "${OUTPUT_ROOT}/cache/stage2_latents/stage2-latent-v1/manifests/latent_manifest_train.jsonl"
+  latent_manifest_test: "${OUTPUT_ROOT}/cache/stage2_latents/stage2-latent-v1/manifests/latent_manifest_test.jsonl"
+
+latent_loading:
+  schema_version: "stage2-latent-v1"
+  latent_dim: 128
+  token_length: 8
+  token_dim: 16
+  cache_extracted_latents: true
+  cache_dir: "${OUTPUT_ROOT}/cache/stage2_latents/stage2-latent-v1"
+  train_manifest: "${OUTPUT_ROOT}/cache/stage2_latents/stage2-latent-v1/manifests/latent_manifest_train.jsonl"
+  test_manifest: "${OUTPUT_ROOT}/cache/stage2_latents/stage2-latent-v1/manifests/latent_manifest_test.jsonl"
+  strict_schema: true
+
+smoke_config:
+  num_train_samples: 100
+  num_val_samples: 20
+  num_test_samples: 20
+  max_epochs_smoke: 1
+  batch_size_smoke: 8
+
+full_split:
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
+  stratify_by_class: true
+
+loading:
+  batch_size: "${BATCH_SIZE}"
+  num_workers: 0
+  pin_memory: true
+  shuffle_train: true
+  shuffle_test: false
+  drop_last_batch: false
+  prefetch_factor: 2
+
+augmentation:
+  enabled: false

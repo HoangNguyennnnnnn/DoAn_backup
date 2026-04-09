@@ -1,0 +1,113 @@
+# Training Configuration for Stage 1: Shape SC-VAE (Smoke/Baseline)
+# v1 baseline implementation with configurable loss
+
+training:
+  stage: "stage1"
+  task_type: "shape_vae_pretraining"
+  max_epochs: 10 # Smoke-level baseline for Kaggle
+  warmup_epochs: 1
+
+# Model architecture
+model:
+  name: "shape_sc_vae"
+  encoder:
+    type: "voxel_cnn_encoder"
+    input_channels: 1 # Single-channel voxel grid
+    input_resolution: 32 # O-Voxel 32^3
+    latent_dim: 128
+    hidden_channels: [64, 128, 256]
+
+  decoder:
+    type: "voxel_cnn_decoder"
+    latent_dim: 128
+    output_resolution: 32
+    hidden_channels: [256, 128, 64]
+    output_channels: 1
+
+  # SLAT-compatible latent interface
+  latent_interface:
+    latent_dim: 128
+    token_type: "continuous" # or "discrete" if using VQ-VAE
+    export_format: "tensor"
+    shape_path:
+      enabled: true
+      token_length: 8
+      token_dim: 16
+      expected_tensor_layout: "B,C,R,R,R"
+
+# Loss function (configurable for v1)
+loss:
+  reconstruction_loss: "mse" # Mean Squared Error for voxel grid
+  reconstruction_weight: 1.0
+
+  use_kl_loss: true
+  kl_loss: "kl_divergence"
+  kl_weight: 0.001 # Start conservative; tune based on convergence
+
+  total_loss_type: "weighted_sum"
+
+# Optimization
+optimizer:
+  name: "adam"
+  lr: 0.001
+  betas: [0.9, 0.999]
+  epsilon: 1e-8
+  weight_decay: 1e-5
+
+scheduler:
+  name: "cosine_annealing"
+  scheduler_kwargs:
+    T_max: 10 # Total epochs
+    eta_min: 1e-6
+
+# Training loop
+loop:
+  mixed_precision: true
+  gradient_accumulation_steps: "${GRAD_ACC_STEPS}"
+  gradient_clipping_max_norm: 1.0
+  log_interval_steps: 50
+  val_interval_steps: 500
+  checkpoint_interval_steps: 500
+
+# OOM recovery policy used by src/train/train_stage1.py
+oom_fallback:
+  enabled: true
+  order: ["batch_size", "grad_accumulation"]
+  min_batch_size: 1
+  max_gradient_accumulation_steps: 32
+
+# Checkpointing and resume strategy
+checkpointing:
+  save_best_only: false # Save periodic checkpoints
+  save_last_only: false # Also keep latest for resume
+  keep_best_n: 3
+  keep_last_n: 3
+  autoresume_enabled: true
+  autoresume_checkpoint_path: "${OUTPUT_ROOT}/checkpoints"
+  artifacts:
+    - "latest.ckpt"
+    - "best.ckpt"
+    - "epoch_{epoch:03d}.ckpt"
+
+# Logging and monitoring
+logging:
+  log_dir: "${OUTPUT_ROOT}/logs"
+  use_tensorboard: true
+  use_wandb: false # Disable for Kaggle offline mode
+  log_frequency: 50 # Steps between logs
+
+monitoring:
+  track_loss: true
+  track_metrics: ["train_loss", "val_loss", "train_kl", "val_kl"]
+  early_stopping_enabled: false # Disable for Kaggle time limits
+  save_val_reconstructions: true
+  num_val_samples_to_save: 8
+
+# Resume settings
+resume:
+  resume_from_checkpoint: "${RESUME_CHECKPOINT_PATH}"
+  strict_model_loading: false # Allow partial loads
+  resume_optimizer_state: true
+  resume_epoch: true
+
+seed: 42

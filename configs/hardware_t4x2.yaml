@@ -1,0 +1,37 @@
+# Hardware Configuration for T4x2 GPU
+# Profile: Two T4 GPUs on Kaggle
+# Reference: Kaggle T4x2 session (32GB total VRAM, 16GB per GPU)
+
+hardware:
+  profile_name: "t4x2_dual"
+  gpu_type: "nvidia_t4"
+  gpu_count: 2
+  vram_gb_per_gpu: 16
+  vram_gb_total: 32
+  runtime_target: "kaggle"
+  distributed: true
+
+training:
+  batch_size: 16 # Scales with available memory
+  mixed_precision: true
+  gradient_accumulation_steps: 1
+  num_workers: 8
+  pin_memory: true
+  prefetch_factor: 2
+  distributed_strategy: "ddp" # DistributedDataParallel
+
+memory:
+  enable_gradient_checkpointing: false # Not required with lower batch size
+  enable_flash_attention: true # T4 supports newer CUDA operations
+  dtype: "float16"
+
+inference:
+  batch_size: 32
+  mixed_precision: true
+  num_workers: 4
+
+checkpointing:
+  save_interval_steps: 500
+  keep_last_n_checkpoints: 3
+  autoresume_enabled: true
+  autoresume_path: "${OUTPUT_ROOT}/checkpoints"

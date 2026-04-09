@@ -1,0 +1,81 @@
+# Data Configuration for Stage 1: Shape SC-VAE Training
+# Locked to v1 baseline: ModelNet40 primary with fallback support
+
+data:
+  stage: "stage1"
+  pipeline_type: "shape_vae_pretraining"
+
+# Primary dataset: ModelNet40 on Kaggle
+dataset:
+  primary:
+    name: "modelnet40"
+    kaggle_slug: "balraj98/modelnet40-princeton-3d-object-dataset"
+    format: "OFF"
+    split: "both" # train + test
+    num_categories: 40
+    num_samples: 12311
+
+  # Fallback dataset: Alternate ModelNet40 mirror on Kaggle
+  fallback:
+    name: "modelnet40_mirror"
+    kaggle_slug: "${MODELNET40_FALLBACK_SLUG}" # Configurable fallback slug
+    format: "OFF"
+    split: "both"
+    override_policy: "use_if_primary_unavailable"
+
+  # Extension dataset: Deferred to Stage 2
+  extension:
+    name: "shapenetpart"
+    kaggle_slug: "majdouline20/shapenetpart-dataset" # Example mirror
+    format: "mixed"
+    defer_to_stage: "stage2_extension"
+
+# Path contracts for Kaggle execution
+paths:
+  # All paths must be relative or use environment variables
+  # Do NOT use absolute local paths
+  dataset_root: "${DATASET_ROOT}" # /kaggle/input/<dataset-slug>/ in Kaggle
+  output_root: "${OUTPUT_ROOT}" # /kaggle/working/ in Kaggle
+  cache_dir: "${OUTPUT_ROOT}/cache"
+  checkpoint_dir: "${OUTPUT_ROOT}/checkpoints"
+  log_dir: "${OUTPUT_ROOT}/logs"
+
+# Preprocessing for 3D shapes
+preprocessing:
+  format_conversion: "off_to_voxel"
+  target_resolution: 32 # O-Voxel representation
+  voxel_dtype: "float32"
+  ovoxel_schema_version: "ovoxel-v1"
+  ovoxel_tensor_layout: "B,C,R,R,R"
+  normalize_meshes: true
+  center_objects: true
+  scale_to_unit_box: true
+
+# Dataset loading
+loading:
+  batch_size: "${BATCH_SIZE}" # Set by hardware profile
+  num_workers: "${NUM_WORKERS}"
+  pin_memory: true
+  shuffle_train: true
+  shuffle_test: false
+  drop_last_batch: true
+  prefetch_factor: 2
+
+# Data augmentation for Stage 1
+augmentation:
+  enabled: true
+  random_rotation: true
+  rotation_range: [0, 360] # degrees
+  random_scale: true
+  scale_range: [0.8, 1.2]
+  random_jitter: false # Disable for clean shape pretraining
+
+train_split:
+  ratio: 0.8
+  stratify_by_class: true
+
+val_split:
+  ratio: 0.2
+
+test_split:
+  use_official_test: true # ModelNet40 has official test set

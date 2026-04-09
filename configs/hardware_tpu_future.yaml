@@ -1,0 +1,38 @@
+# Hardware Configuration for TPU (Future Branch Marker)
+# Profile: TPU runtime - NOT YET IMPLEMENTED
+# Reference: Future Kaggle TPU integration (when available)
+# Status: Placeholder for v2 pathway; no v1 commitment
+
+hardware:
+  profile_name: "tpu_v3_future"
+  accelerator_type: "tpu"
+  runtime_target: "kaggle_tpu_future"
+  status: "deferred"
+
+training:
+  batch_size: 32 # TPU-typical batch scaling (placeholder)
+  mixed_precision: true
+  gradient_accumulation_steps: 1
+  num_workers: 0 # TPU input pipeline handled differently
+  pin_memory: false
+  prefetch_factor: 4
+
+memory:
+  enable_gradient_checkpointing: false # TPU typically has more memory
+  dtype: "bfloat16" # Preferred for TPU
+
+inference:
+  batch_size: 64
+  mixed_precision: true
+  num_workers: 0
+
+checkpointing:
+  save_interval_steps: 1000
+  keep_last_n_checkpoints: 2
+  autoresume_enabled: true
+  autoresume_path: "${OUTPUT_ROOT}/checkpoints"
+
+notes: |
+  TPU implementation is deferred to Stage 2 or later work.
+  This config is a placeholder for future Kaggle TPU runtime integration.
+  No v1 sign-off is required for TPU support.
